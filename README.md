@@ -45,18 +45,22 @@ Detections fan out two ways at once — to a live dashboard and down into the la
 
 ## Tech stack
 
-| Layer            | Local (free)                          | Cloud upgrade (later)        |
-|------------------|---------------------------------------|------------------------------|
-| Event streaming  | Kafka-compatible broker (local)       | AWS MSK / Confluent Cloud    |
-| Schema registry  | Local schema registry                 | Confluent Schema Registry    |
-| Stream processing| Apache Flink                          | Apache Flink (same jobs)     |
-| Object storage   | MinIO (S3-compatible)                 | Amazon S3                    |
-| Lakehouse        | Spark + Delta Lake (local)            | Databricks + Delta Lake      |
-| Dashboard/alerts | Local dashboard + Slack webhook       | same                         |
+| Layer            | Local (free)                          | Cloud upgrade (later)                  |
+|------------------|---------------------------------------|-----------------------------------------|
+| Event streaming  | Kafka-compatible broker (local)       | Azure Event Hubs (Kafka-compatible)     |
+| Schema registry  | Local schema registry                 | Azure Schema Registry / Confluent       |
+| Stream processing| Apache Flink                          | Apache Flink (same jobs)                |
+| Object storage   | MinIO (S3-compatible)                 | Azure Data Lake Storage Gen2            |
+| Lakehouse        | Spark + Delta Lake (local)            | Azure Databricks + Delta Lake           |
+| Dashboard/alerts | Local dashboard + Slack webhook       | same                                     |
+| Infra provisioning | —                                    | Terraform (Azure)                        |
 
-The whole point: **the local and cloud paths run the same code.** Object storage is
-S3-compatible from day one, so moving to AWS is a matter of changing values in `.env`,
-not rewriting anything.
+The whole point: **the local and cloud paths run the same processing code.** The Flink
+jobs and detection logic don't change between local and cloud — only the storage and
+ingestion clients swap out for the cloud phase.
+>  **Note:** unlike MinIO, Azure Data Lake Storage Gen2 is not S3-API-compatible, so this
+> isn't a drop-in `.env` change — the object storage client itself gets swapped when we
+> wire up the cloud upgrade.
 
 ---
 
@@ -98,7 +102,7 @@ stream-sentinel/
 │   └── detections/      # the detection jobs
 ├── lakehouse/           # bronze / silver / gold (Delta)
 ├── serving/             # dashboard + alert sink
-├── infra/               # optional AWS / Databricks (cloud upgrade)
+├── infra/               # Terraform on Azure — Event Hubs, ADLS Gen2, Databricks
 └── docs/                # architecture notes and diagrams
 ```
 
@@ -124,7 +128,7 @@ stream-sentinel/
 - [ ] First live detection: brute force
 - [ ] Delta lakehouse (bronze → silver → gold) + hunting queries
 - [ ] Live dashboard + Slack alerting
-- [ ] Cloud upgrade path: AWS (MSK, S3) and Databricks
+- [ ] Cloud upgrade path: Azure (Event Hubs, ADLS Gen2, Databricks) via Terraform
 
 ---
 
